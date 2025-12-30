@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Creator</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100%;
+            overflow: hidden;
+            background-color: #f0f2f5;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #sidebar {
+            flex: 0 0 250px;
+            background: #ffffff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #sidebar h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        #sidebar button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+
+        #sidebar button:hover {
+            background-color: #0056b3;
+        }
+
+        #person-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        #person-list li {
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #person-list li:hover {
+            background-color: #e9e9e9;
+            border-color: #ccc;
+        }
+
+        #main-canvas {
+            flex: 1;
+            position: relative;
+            background: #fafafa;
+            overflow: auto;
+            display: flex; /* Use flex to center the button */
+            justify-content: center;
+            align-items: center;
+        }
+
+        #add-first-person-btn {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        #add-first-person-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        #family-tree-canvas {
+            display: block; /* Ensure canvas is block-level */
+            background-color: #fdfdfd;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        /* Modal Styles */
+        #modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            max-width: 550px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .modal form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal label {
+            font-weight: bold;
+            margin-top: 5px;
+            color: #555;
+        }
+
+        .modal input[type="text"],
+        .modal input[type="file"],
+        .modal select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        #person-photo-preview {
+            border: 1px solid #eee;
+            margin-top: 5px;
+            border-radius: 4px;
+            object-fit: cover;
+            align-self: flex-start; /* Align preview to the left */
+        }
+
+        .modal hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 20px 0;
+        }
+
+        .modal-actions, #relationship-controls, #relationship-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap; /* Allow buttons to wrap */
+            margin-top: 10px;
+        }
+
+        .modal-actions button, #relationship-controls button, #relationship-selector button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
+            border: 1px solid transparent;
+        }
+
+        #save-person-btn { background-color: #007bff; color: white; }
+        #save-person-btn:hover { background-color: #0056b3; }
+
+        #delete-person-btn { background-color: #dc3545; color: white; }
+        #delete-person-btn:hover { background-color: #c82333; }
+
+        #close-modal-btn { background-color: #6c757d; color: white; }
+        #close-modal-btn:hover { background-color: #5a6268; }
+
+        #add-parent-btn, #add-child-btn, #add-spouse-btn { background-color: #17a2b8; color: white; }
+        #add-parent-btn:hover, #add-child-btn:hover, #add-spouse-btn:hover { background-color: #138496; }
+
+        #select-existing-person-btn { background-color: #28a745; color: white; }
+        #select-existing-person-btn:hover { background-color: #218838; }
+
+        #create-new-person-relation-btn { background-color: #ffc107; color: #333; border-color: #ffc107; }
+        #create-new-person-relation-btn:hover { background-color: #e0a800; }
+
+        #cancel-relationship-selection-btn { background-color: #6c757d; color: white; }
+        #cancel-relationship-selection-btn:hover { background-color: #5a6268; }
+
+        #relationship-selector {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        #relationship-selector p {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        #relationship-selector select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <aside id="sidebar">
+            <button id="import-data-btn">Import Data</button>
+            <input type="file" id="import-file-input" accept=".json" style="display: none;">
+            <button id="export-data-btn">Export Data</button>
+            <h3>Persons</h3>
+            <ul id="person-list">
+                <!-- Person list items will be injected here -->
+            </ul>
+        </aside>
+        <main id="main-canvas">
+            <button id="add-first-person-btn">Add First Person</button>
+            <canvas id="family-tree-canvas"></canvas>
+        </main>
+    </div>
+
+    <div id="modal-container">
+        <div id="add-edit-person-modal" class="modal">
+            <h2><span id="modal-title">Add New Person</span></h2>
+            <form id="person-form">
+                <label for="photo-upload">Photo:</label>
+                <input type="file" id="photo-upload" accept="image/*">
+                <img id="person-photo-preview" src="" alt="Photo Preview" style="max-width: 100px; max-height: 100px; display: none;">
+                <label for="first-name">First Name:</label>
+                <input type="text" id="first-name" required>
+                <label for="last-name">Last Name:</label>
+                <input type="text" id="last-name">
+                <label for="birth-date">Birth Year:</label>
+                <input type="text" id="birth-date">
+                <label for="death-date">Death Year:</label>
+                <input type="text" id="death-date">
+                <label for="gender">Gender:</label>
+                <select id="gender">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+
+                <div class="modal-actions">
+                    <button type="button" id="save-person-btn">Save</button>
+                    <button type="button" id="delete-person-btn" style="display: none;">Delete Person</button>
+                    <button type="button" id="close-modal-btn">Cancel</button>
+                </div>
+
+                <hr>
+                <h3>Relationships</h3>
+                <div id="relationship-controls">
+                    <button type="button" id="add-parent-btn">Add Parent</button>
+                    <button type="button" id="add-child-btn">Add Child</button>
+                    <button type="button" id="add-spouse-btn">Add Spouse</button>
+                </div>
+                <div id="relationship-selector" style="display: none;">
+                    <p id="relationship-prompt"></p>
+                    <select id="existing-person-dropdown"></select>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="select-existing-person-btn">Select</button>
+                        <button type="button" id="create-new-person-relation-btn">Create New</button>
+                        <button type="button" id="cancel-relationship-selection-btn">Cancel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global App State
+        let appState = {
+            app: {
+                settings: {},
+                tree: {
+                    persons: [],
+                    relations: []
+                }
+            }
+        };
+        let dirty = false; // Flag for unsaved changes
+        let selectedPersonId = null; // Currently selected person for editing
+        let currentRelationshipTarget = { type: null, personId: null }; // For adding relations
+
+        // DOM Elements
+        const importFileInput = document.getElementById('import-file-input');
+        const importDataBtn = document.getElementById('import-data-btn');
+        const exportDataBtn = document.getElementById('export-data-btn');
+        const personListUl = document.getElementById('person-list');
+        const addFirstPersonBtn = document.getElementById('add-first-person-btn');
+        const familyTreeCanvas = document.getElementById('family-tree-canvas');
+        const ctx = familyTreeCanvas.getContext('2d');
+        const modalContainer = document.getElementById('modal-container');
+        const addEditPersonModal = document.getElementById('add-edit-person-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const personForm = document.getElementById('person-form');
+        const photoUpload = document.getElementById('photo-upload');
+        const personPhotoPreview = document.getElementById('person-photo-preview');
+        const firstNameInput = document.getElementById('first-name');
+        const lastNameInput = document.getElementById('last-name');
+        const birthDateInput = document.getElementById('birth-date');
+        const deathDateInput = document.getElementById('death-date');
+        const genderSelect = document.getElementById('gender');
+        const savePersonBtn = document.getElementById('save-person-btn');
+        const deletePersonBtn = document.getElementById('delete-person-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const relationshipControls = document.getElementById('relationship-controls');
+        const addParentBtn = document.getElementById('add-parent-btn');
+        const addChildBtn = document.getElementById('add-child-btn');
+        const addSpouseBtn = document.getElementById('add-spouse-btn');
+        const relationshipSelector = document.getElementById('relationship-selector');
+        const relationshipPrompt = document.getElementById('relationship-prompt');
+        const existingPersonDropdown = document.getElementById('existing-person-dropdown');
+        const selectExistingPersonBtn = document.getElementById('select-existing-person-btn');
+        const createNewPersonRelationBtn = document.getElementById('create-new-person-relation-btn');
+        const cancelRelationshipSelectionBtn = document.getElementById('cancel-relationship-selection-btn');
+        const mainCanvasElement = document.getElementById('main-canvas');
+
+
+        // Canvas dimensions (will be set dynamically)
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+
+        // Node dimensions for canvas drawing
+        const NODE_WIDTH = 150;
+        const NODE_HEIGHT = 80;
+        const HORIZONTAL_SPACING = 50;
+        const VERTICAL_SPACING = 120; // Space between generations
+        const PHOTO_SIZE = 30;
+
+        // Map to store person node positions for click detection
+        const personNodePositions = new Map(); // Map<personId, {x, y, width, height}>
+
+        // Utility Functions
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function updateDirtyFlag(isDirty) {
+            dirty = isDirty;
+            if (isDirty) {
+                window.onbeforeunload = function() {
+                    return 'You have unsaved changes. Are you sure you want to leave?';
+                };
+            } else {
+                window.onbeforeunload = null;
+            }
+        }
+
+        // App Rendering
+        function renderApp() {
+            renderPersonList();
+            renderCanvas();
+        }
+
+        // Import/Export Logic
+        importDataBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', handleImportFile);
+        exportDataBtn.addEventListener('click', handleExportData);
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    // Basic validation
+                    if (importedState && importedState.app && importedState.app.tree &&
+                        Array.isArray(importedState.app.tree.persons) &&
+                        Array.isArray(importedState.app.tree.relations)) {
+                        appState = importedState;
+                        renderApp();
+                        updateDirtyFlag(true); // Imported data is "new" and needs to be exported
+                        closeModal(); // Close modal if open after import
+                    } else {
+                        alert('Invalid JSON file structure. Please ensure it matches the expected Family Tree format.');
+                    }
+                } catch (error) {
+                    alert('Failed to parse JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function handleExportData() {
+            const dataStr = JSON.stringify(appState, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'family_tree.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            updateDirtyFlag(false);
+        }
+
+        // Modal Logic
+        addFirstPersonBtn.addEventListener('click', () => openModal(null));
+        closeModalBtn.addEventListener('click', closeModal);
+        savePersonBtn.addEventListener('click', handleSavePerson);
+        deletePersonBtn.addEventListener('click', handleDeletePerson);
+
+        function openModal(personId) {
+            selectedPersonId = personId;
+            personForm.reset();
+            personPhotoPreview.src = '';
+            personPhotoPreview.style.display = 'none';
+            deletePersonBtn.style.display = personId ? 'inline-block' : 'none';
+            relationshipControls.style.display = personId ? 'flex' : 'none'; // Only show relationship controls if editing existing
+
+            if (personId) {
+                modalTitle.textContent = 'Edit Person';
+                const person = appState.app.tree.persons.find(p => p.id === personId);
+                if (person) {
+                    firstNameInput.value = person.firstName;
+                    lastNameInput.value = person.lastName;
+                    birthDateInput.value = person.birthDate;
+                    deathDateInput.value = person.deathDate;
+                    genderSelect.value = person.gender;
+                    if (person.photo) {
+                        personPhotoPreview.src = person.photo;
+                        personPhotoPreview.style.display = 'block';
+                    }
+                }
+            } else {
+                modalTitle.textContent = 'Add New Person';
+            }
+            modalContainer.style.display = 'flex';
+            relationshipSelector.style.display = 'none'; // Hide relationship selector initially
+        }
+
+        function closeModal() {
+            modalContainer.style.display = 'none';
+            selectedPersonId = null;
+            currentRelationshipTarget = { type: null, personId: null };
+            personForm.reset();
+        }
+
+        photoUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    personPhotoPreview.src = e.target.result;
+                    personPhotoPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                personPhotoPreview.src = '';
+                personPhotoPreview.style.display = 'none';
+            }
+        });
+
+        function handleSavePerson() {
+            if (!personForm.checkValidity()) {
+                personForm.reportValidity();
+                return;
+            }
+
+            const personData = {
+                firstName: firstNameInput.value,
+                lastName: lastNameInput.value,
+                birthDate: birthDateInput.value,
+                deathDate: deathDateInput.value,
+                gender: genderSelect.value,
+                photo: personPhotoPreview.src.startsWith('data:') ? personPhotoPreview.src : ''
+            };
+
+            if (selectedPersonId) {
+                // Update existing person
+                const index = appState.app.tree.persons.findIndex(p => p.id === selectedPersonId);
+                if (index !== -1) {
+                    appState.app.tree.persons[index] = { ...appState.app.tree.persons[index], ...personData };
+                }
+            } else {
+                // Add new person
+                personData.id = generateUUID();
+                appState.app.tree.persons.push(personData);
+
+                // If a new person was created as a relation target, link it
+                if (currentRelationshipTarget.type && currentRelationshipTarget.personId) {
+                    if (currentRelationshipTarget.type === 'parent') {
+                        appState.app.tree.relations.push({
+                            from: personData.id,
+                            to: currentRelationshipTarget.personId,
+                            type: 'parent'
+                        });
+                    } else if (currentRelationshipTarget.type === 'child') {
+                        appState.app.tree.relations.push({
+                            from: currentRelationshipTarget.personId,
+                            to: personData.id,
+                            type: 'parent' // Child implies the inverse parent relationship
+                        });
+                    } else if (currentRelationshipTarget.type === 'spouse') {
+                        // Check for existing spouse relation to avoid duplicates (bidirectional)
+                        const existingRelation1 = appState.app.tree.relations.some(r =>
+                            (r.from === personData.id && r.to === currentRelationshipTarget.personId && r.type === 'spouse') ||
+                            (r.from === currentRelationshipTarget.personId && r.to === personData.id && r.type === 'spouse')
+                        );
+                        if (!existingRelation1) {
+                            appState.app.tree.relations.push({
+                                from: personData.id,
+                                to: currentRelationshipTarget.personId,
+                                type: 'spouse'
+                            });
+                            appState.app.tree.relations.push({ // Bidirectional spouse relationship
+                                from: currentRelationshipTarget.personId,
+                                to: personData.id,
+                                type: 'spouse'
+                            });
+                        }
+                    }
+                }
+            }
+
+            updateDirtyFlag(true);
+            closeModal();
+            renderApp();
+        }
+
+        function handleDeletePerson() {
+            if (!selectedPersonId) return;
+
+            if (confirm('Are you sure you want to delete this person and all associated relationships?')) {
+                appState.app.tree.persons = appState.app.tree.persons.filter(p => p.id !== selectedPersonId);
+                appState.app.tree.relations = appState.app.tree.relations.filter(
+                    r => r.from !== selectedPersonId && r.to !== selectedPersonId
+                );
+                updateDirtyFlag(true);
+                closeModal();
+                renderApp();
+            }
+        }
+
+        // Relationship Management
+        addParentBtn.addEventListener('click', () => showRelationshipSelector('parent'));
+        addChildBtn.addEventListener('click', () => showRelationshipSelector('child'));
+        addSpouseBtn.addEventListener('click', () => showRelationshipSelector('spouse'));
+        selectExistingPersonBtn.addEventListener('click', handleSelectExistingPersonRelation);
+        createNewPersonRelationBtn.addEventListener('click', handleCreateNewPersonRelation);
+        cancelRelationshipSelectionBtn.addEventListener('click', hideRelationshipSelector);
+
+        function showRelationshipSelector(type) {
+            if (!selectedPersonId) return;
+
+            currentRelationshipTarget.type = type;
+            currentRelationshipTarget.personId = selectedPersonId;
+
+            relationshipPrompt.textContent = `Select an existing person to add as a ${type} or create a new one:`;
+            existingPersonDropdown.innerHTML = '';
+            const otherPersons = appState.app.tree.persons.filter(p => p.id !== selectedPersonId);
+
+            if (otherPersons.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'No other persons available.';
+                option.value = '';
+                option.disabled = true;
+                existingPersonDropdown.appendChild(option);
+                selectExistingPersonBtn.disabled = true;
+            } else {
+                selectExistingPersonBtn.disabled = false;
+                otherPersons.sort((a, b) => a.firstName.localeCompare(b.firstName)).forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.id;
+                    option.textContent = `${person.firstName} ${person.lastName}`;
+                    existingPersonDropdown.appendChild(option);
+                });
+            }
+
+            relationshipSelector.style.display = 'flex';
+            relationshipControls.style.display = 'none'; // Hide main relationship buttons
+        }
+
+        function hideRelationshipSelector() {
+            relationshipSelector.style.display = 'none';
+            relationshipControls.style.display = 'flex';
+            currentRelationshipTarget = { type: null, personId: null };
+        }
+
+        function handleSelectExistingPersonRelation() {
+            const targetPersonId = existingPersonDropdown.value;
+            if (!targetPersonId || !selectedPersonId) return;
+
+            let newRelation = null;
+            if (currentRelationshipTarget.type === 'parent') {
+                // targetPersonId is the parent, selectedPersonId is the child
+                newRelation = { from: targetPersonId, to: selectedPersonId, type: 'parent' };
+            } else if (currentRelationshipTarget.type === 'child') {
+                // targetPersonId is the child, selectedPersonId is the parent
+                newRelation = { from: selectedPersonId, to: targetPersonId, type: 'parent' };
+            } else if (currentRelationshipTarget.type === 'spouse') {
+                // Both are spouses
+                const existingRelation1 = appState.app.tree.relations.some(r =>
+                    (r.from === selectedPersonId && r.to === targetPersonId && r.type === 'spouse')
+                );
+                if (!existingRelation1) {
+                    appState.app.tree.relations.push({ from: selectedPersonId, to: targetPersonId, type: 'spouse' });
+                    appState.app.tree.relations.push({ from: targetPersonId, to: selectedPersonId, type: 'spouse' }); // Bidirectional
+                    updateDirtyFlag(true);
+                }
+                hideRelationshipSelector();
+                renderApp();
+                return;
+            }
+
+            if (newRelation) {
+                // Prevent duplicate parent/child relations
+                const exists = appState.app.tree.relations.some(r =>
+                    r.from === newRelation.from && r.to === newRelation.to && r.type === newRelation.type
+                );
+                if (!exists) {
+                    appState.app.tree.relations.push(newRelation);
+                    updateDirtyFlag(true);
+                }
+            }
+            hideRelationshipSelector();
+            renderApp();
+        }
+
+        function handleCreateNewPersonRelation() {
+            // This will keep currentRelationshipTarget set, and openModal(null) will let handleSavePerson
+            // know to link the newly created person with the selectedPersonId based on currentRelationshipTarget.
+            openModal(null);
+        }
+
+        // Sidebar Person List
+        function renderPersonList() {
+            personListUl.innerHTML = '';
+            appState.app.tree.persons.sort((a, b) => {
+                const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+                const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+                return nameA.localeCompare(nameB);
+            }).forEach(person => {
+                const li = document.createElement('li');
+                li.textContent = `${person.firstName || ''} ${person.lastName || ''} (${(person.gender || 'unknown').charAt(0).toUpperCase()})`;
+                li.dataset.personId = person.id;
+                li.onclick = () => openModal(person.id);
+                personListUl.appendChild(li);
+            });
+        }
+
+        // Canvas Rendering
+        // Function to get children of a person
+        function getChildren(personId) {
+            return appState.app.tree.relations
+                .filter(rel => rel.from === personId && rel.type === 'parent')
+                .map(rel => appState.app.tree.persons.find(p => p.id === rel.to))
+                .filter(Boolean);
+        }
+
+        // Function to get parents of a person
+        function getParents(personId) {
+            return appState.app.tree.relations
+                .filter(rel => rel.to === personId && rel.type === 'parent')
+                .map(rel => appState.app.tree.persons.find(p => p.id === rel.from))
+                .filter(Boolean);
+        }
+
+        // Function to get spouses of a person
+        function getSpouses(personId) {
+            return appState.app.tree.relations
+                .filter(rel => rel.from === personId && rel.type === 'spouse')
+                .map(rel => appState.app.tree.persons.find(p => p.id === rel.to))
+                .filter(Boolean);
+        }
+
+        function renderCanvas() {
+            canvasWidth = mainCanvasElement.offsetWidth;
+            // A large default height, will adjust based on content
+            canvasHeight = Math.max(mainCanvasElement.offsetHeight, 1000);
+            familyTreeCanvas.width = canvasWidth;
+            familyTreeCanvas.height = canvasHeight;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            personNodePositions.clear(); // Clear previous positions
+
+            if (appState.app.tree.persons.length === 0) {
+                addFirstPersonBtn.style.display = 'block';
+                familyTreeCanvas.style.display = 'none';
+                return;
+            }
+
+            addFirstPersonBtn.style.display = 'none';
+            familyTreeCanvas.style.display = 'block';
+
+            const levels = new Map(); // Maps person ID to their level (generation)
+            const visited = new Set(); // To prevent infinite loops in cyclic graphs or re-processing
+
+            // Step 1: Assign levels
+            // Start with persons that have no parents (true roots)
+            let roots = appState.app.tree.persons.filter(p => getParents(p.id).length === 0);
+
+            // If no explicit roots, or if some people are disconnected, assign them to level 0
+            if (roots.length === 0 && appState.app.tree.persons.length > 0) {
+                roots = appState.app.tree.persons; // Treat all as potential roots
+            }
+
+            // BFS to assign levels
+            let queue = roots.map(p => ({ person: p, level: 0 }));
+            let head = 0;
+            while(head < queue.length) {
+                const { person, level } = queue[head++];
+                if (levels.has(person.id) && levels.get(person.id) <= level) {
+                    continue; // Already found a path to this person at an equal or higher level
+                }
+                levels.set(person.id, level);
+
+                // Add children to queue
+                getChildren(person.id).forEach(child => {
+                    queue.push({ person: child, level: level + 1 });
+                });
+
+                // Add spouses to queue (same level)
+                getSpouses(person.id).forEach(spouse => {
+                    if (!levels.has(spouse.id)) { // Only add if not yet assigned a level
+                        queue.push({ person: spouse, level: level });
+                    }
+                });
+            }
+
+            // Ensure all persons are assigned a level (handle disconnected subgraphs)
+            appState.app.tree.persons.forEach(p => {
+                if (!levels.has(p.id)) {
+                    // Find a path to a root or assign to level 0 if truly isolated
+                    let assigned = false;
+                    let currentPerson = p;
+                    let pathLevel = 0;
+                    const pathVisited = new Set();
+
+                    // Try to find a path to an existing person with a level
+                    while (currentPerson && !pathVisited.has(currentPerson.id)) {
+                        if (levels.has(currentPerson.id)) {
+                            levels.set(p.id, levels.get(currentPerson.id) + pathLevel);
+                            assigned = true;
+                            break;
+                        }
+                        pathVisited.add(currentPerson.id);
+                        const parents = getParents(currentPerson.id);
+                        if (parents.length > 0) {
+                            currentPerson = parents[0]; // Take the first parent
+                            pathLevel--;
+                        } else {
+                            currentPerson = null;
+                        }
+                    }
+                    if (!assigned) {
+                        levels.set(p.id, 0); // Default to level 0 if isolated
+                    }
+                }
+            });
+
+            const personsByLevel = new Map();
+            let maxLevel = 0;
+            levels.forEach((level, personId) => {
+                if (!personsByLevel.has(level)) {
+                    personsByLevel.set(level, []);
+                }
+                personsByLevel.get(level).push(appState.app.tree.persons.find(p => p.id === personId));
+                maxLevel = Math.max(maxLevel, level);
+            });
+
+            // Step 2: Position persons
+            let currentMaxY = 0;
+            for (let level = 0; level <= maxLevel; level++) {
+                const personsInLevel = personsByLevel.get(level) || [];
+                personsInLevel.sort((a, b) => a.id.localeCompare(b.id)); // Consistent horizontal order
+
+                const totalWidthForLevel = personsInLevel.length * NODE_WIDTH + (personsInLevel.length - 1) * HORIZONTAL_SPACING;
+                let startX = (canvasWidth - totalWidthForLevel) / 2;
+                if (startX < 0) startX = 10; // Ensure it's not off-screen for many nodes
+
+                personsInLevel.forEach(person => {
+                    const x = startX;
+                    const y = level * VERTICAL_SPACING + 50; // 50px padding from top
+
+                    personNodePositions.set(person.id, { x, y, width: NODE_WIDTH, height: NODE_HEIGHT });
+                    drawPersonNode(person, x, y);
+                    startX += NODE_WIDTH + HORIZONTAL_SPACING;
+                    currentMaxY = Math.max(currentMaxY, y + NODE_HEIGHT);
+                });
+            }
+
+            // Adjust canvas height if content exceeds initial height
+            const requiredCanvasHeight = currentMaxY + VERTICAL_SPACING; // Add some padding
+            if (requiredCanvasHeight > familyTreeCanvas.height) {
+                familyTreeCanvas.height = requiredCanvasHeight;
+                // Redraw all if canvas size changed
+                ctx.clearRect(0, 0, familyTreeCanvas.width, familyTreeCanvas.height);
+                // Re-draw nodes (needed because canvas was cleared)
+                 for (let level = 0; level <= maxLevel; level++) {
+                    const personsInLevel = personsByLevel.get(level) || [];
+                    personsInLevel.sort((a, b) => a.id.localeCompare(b.id));
+
+                    const totalWidthForLevel = personsInLevel.length * NODE_WIDTH + (personsInLevel.length - 1) * HORIZONTAL_SPACING;
+                    let startX = (canvasWidth - totalWidthForLevel) / 2;
+                     if (startX < 0) startX = 10;
+
+                    personsInLevel.forEach(person => {
+                        const { x, y } = personNodePositions.get(person.id); // Get pre-calculated position
+                        drawPersonNode(person, x, y);
+                    });
+                }
+            }
+
+
+            // Step 3: Draw relationships (lines)
+            appState.app.tree.relations.forEach(relation => {
+                const fromNode = personNodePositions.get(relation.from);
+                const toNode = personNodePositions.get(relation.to);
+
+                if (fromNode && toNode) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#555';
+                    ctx.lineWidth = 2;
+
+                    if (relation.type === 'parent') {
+                        // Parent to child: line from bottom of parent to top of child
+                        const startX = fromNode.x + NODE_WIDTH / 2;
+                        const startY = fromNode.y + NODE_HEIGHT;
+                        const endX = toNode.x + NODE_WIDTH / 2;
+                        const endY = toNode.y;
+
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(startX, startY + VERTICAL_SPACING / 2 - 20); // Down a bit
+                        ctx.lineTo(endX, startY + VERTICAL_SPACING / 2 - 20); // Across
+                        ctx.lineTo(endX, endY);
+                        ctx.stroke();
+
+                        // Draw arrow head (triangle)
+                        const arrowSize = 8;
+                        ctx.fillStyle = '#555';
+                        ctx.beginPath();
+                        ctx.moveTo(endX, endY);
+                        ctx.lineTo(endX - arrowSize / 2, endY - arrowSize);
+                        ctx.lineTo(endX + arrowSize / 2, endY - arrowSize);
+                        ctx.closePath();
+                        ctx.fill();
+
+                    } else if (relation.type === 'spouse') {
+                        // Spouses: horizontal line between them
+                        if (fromNode.y === toNode.y) { // Ensure they are on the same level
+                            const midY = fromNode.y + NODE_HEIGHT / 2;
+                            let leftX = fromNode.x + NODE_WIDTH;
+                            let rightX = toNode.x;
+                            // Ensure line always draws from left to right
+                            if (fromNode.x > toNode.x) {
+                                leftX = toNode.x + NODE_WIDTH;
+                                rightX = fromNode.x;
+                            }
+                            ctx.moveTo(leftX, midY);
+                            ctx.lineTo(rightX, midY);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawPersonNode(person, x, y) {
+            const genderColor = person.gender === 'male' ? '#ADD8E6' : '#FFB6C1'; // Light Blue / Light Pink
+            const borderColor = person.gender === 'male' ? '#87CEEB' : '#FF69B4';
+
+            // Draw rectangle
+            ctx.fillStyle = genderColor;
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 2;
+            ctx.roundRect(x, y, NODE_WIDTH, NODE_HEIGHT, 10);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw photo
+            if (person.photo) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, x + 10, y + (NODE_HEIGHT - PHOTO_SIZE) / 2, PHOTO_SIZE, PHOTO_SIZE);
+                };
+                img.src = person.photo;
+            }
+
+            // Draw text
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            const textX = x + (person.photo ? 10 + PHOTO_SIZE + 10 : 10); // Adjust text start based on photo
+
+            ctx.fillText(person.firstName, textX, y + 25);
+            ctx.fillText(person.lastName, textX, y + 45);
+
+            ctx.font = '12px Arial';
+            const years = `${person.birthDate || ''} - ${person.deathDate || ''}`.trim();
+            if (years) {
+                ctx.fillText(years, textX, y + 65);
+            }
+
+            // Store position for click detection
+            personNodePositions.set(person.id, { x: x, y: y, width: NODE_WIDTH, height: NODE_HEIGHT });
+        }
+
+        // Canvas Click/Double-click Listener
+        familyTreeCanvas.addEventListener('dblclick', (event) => {
+            const rect = familyTreeCanvas.getBoundingClientRect();
+            const scaleX = familyTreeCanvas.width / rect.width;
+            const scaleY = familyTreeCanvas.height / rect.height;
+            const mouseX = (event.clientX - rect.left) * scaleX;
+            const mouseY = (event.clientY - rect.top) * scaleY;
+
+            for (const [personId, pos] of personNodePositions.entries()) {
+                if (mouseX >= pos.x && mouseX <= pos.x + pos.width &&
+                    mouseY >= pos.y && mouseY <= pos.y + pos.height) {
+                    openModal(personId);
+                    return;
+                }
+            }
+        });
+
+        // Initial render when the app loads
+        document.addEventListener('DOMContentLoaded', renderApp);
+    </script>
+</body>
+</html>
