@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Creator</title>
+    <style>
+        :root {
+            --male-color: #add8e6;
+            --female-color: #ffc0cb;
+            --neutral-color: #f0f0f0;
+            --border-color: #ccc;
+            --text-color: #333;
+            --sidebar-bg: #f5f5f5;
+            --button-bg: #4a86e8;
+            --button-hover: #3a76d8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 20px;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: var(--button-hover);
+        }
+
+        .person-list {
+            list-style: none;
+        }
+
+        .person-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .person-item:hover {
+            background-color: #e9e9e9;
+        }
+
+        .person-item.male {
+            border-left: 4px solid var(--male-color);
+        }
+
+        .person-item.female {
+            border-left: 4px solid var(--female-color);
+        }
+
+        /* Main Canvas Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background-color: #fff;
+        }
+
+        .initial-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .initial-message button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .family-tree {
+            min-height: 100%;
+            min-width: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .level {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .person-node {
+            width: 150px;
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--male-color);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .person-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .person-node.female {
+            background-color: var(--female-color);
+        }
+
+        .person-node.neutral {
+            background-color: var(--neutral-color);
+        }
+
+        .person-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .person-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .person-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .person-dates {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .relation-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .relation-btn {
+            padding: 8px 15px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .relation-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        .save-btn {
+            background-color: #28a745;
+        }
+
+        .save-btn:hover {
+            background-color: #218838;
+        }
+
+        /* Relationship lines */
+        .relationship-line {
+            position: absolute;
+            background-color: #999;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Family Tree</h2>
+        
+        <div class="controls">
+            <button id="importBtn" class="btn">Import Data</button>
+            <button id="exportBtn" class="btn">Export Data</button>
+        </div>
+        
+        <h3>People</h3>
+        <ul id="personList" class="person-list">
+            <!-- Person items will be added here dynamically -->
+        </ul>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="canvas-container">
+            <div id="initialMessage" class="initial-message">
+                <h2>Family Tree Creator</h2>
+                <p>Build your family tree by adding people and relationships</p>
+                <button id="addFirstPersonBtn">Add First Person</button>
+            </div>
+            
+            <div id="familyTree" class="family-tree" style="display: none;">
+                <!-- Family tree will be rendered here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Person Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Person</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="personPhoto">Photo</label>
+                <input type="file" id="personPhoto" accept="image/*">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="birthDate">Birth Year</label>
+                    <input type="text" id="birthDate" placeholder="YYYY">
+                </div>
+                
+                <div class="form-group">
+                    <label for="deathDate">Death Year</label>
+                    <input type="text" id="deathDate" placeholder="YYYY">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
+            
+            <div class="relation-buttons">
+                <button id="addParentBtn" class="relation-btn">Add Parent</button>
+                <button id="addChildBtn" class="relation-btn">Add Child</button>
+                <button id="addSpouseBtn" class="relation-btn">Add Spouse</button>
+            </div>
+            
+            <div class="form-group" id="relationsList">
+                <!-- Relations will be listed here -->
+            </div>
+            
+            <div class="relation-buttons">
+                <button id="saveBtn" class="save-btn">Save</button>
+                <button id="deleteBtn" class="delete-btn">Delete Person</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Application state
+        const appState = {
+            settings: {},
+            tree: {
+                persons: [],
+                relations: []
+            }
+        };
+        
+        // DOM Elements
+        const personListEl = document.getElementById('personList');
+        const familyTreeEl = document.getElementById('familyTree');
+        const initialMessageEl = document.getElementById('initialMessage');
+        const editModalEl = document.getElementById('editModal');
+        const modalTitleEl = document.getElementById('modalTitle');
+        const personPhotoEl = document.getElementById('personPhoto');
+        const firstNameEl = document.getElementById('firstName');
+        const lastNameEl = document.getElementById('lastName');
+        const birthDateEl = document.getElementById('birthDate');
+        const deathDateEl = document.getElementById('deathDate');
+        const genderEl = document.getElementById('gender');
+        const addParentBtn = document.getElementById('addParentBtn');
+        const addChildBtn = document.getElementById('addChildBtn');
+        const addSpouseBtn = document.getElementById('addSpouseBtn');
+        const relationsListEl = document.getElementById('relationsList');
+        const saveBtn = document.getElementById('saveBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const closeBtn = document.querySelector('.close-btn');
+        const importBtn = document.getElementById('importBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const addFirstPersonBtn = document.getElementById('addFirstPersonBtn');
+        
+        // Current person being edited
+        let currentPersonId = null;
+        let hasUnsavedChanges = false;
+        
+        // Initialize the application
+        function initApp() {
+            // Check if we have any persons
+            if (appState.tree.persons.length === 0) {
+                showInitialMessage();
+            } else {
+                renderPersonList();
+                renderFamilyTree();
+            }
+            
+            // Event listeners
+            addFirstPersonBtn.addEventListener('click', () => openEditModal());
+            saveBtn.addEventListener('click', savePerson);
+            deleteBtn.addEventListener('click', deletePerson);
+            closeBtn.addEventListener('click', closeModal);
+            importBtn.addEventListener('click', importData);
+            exportBtn.addEventListener('click', exportData);
+            addParentBtn.addEventListener('click', () => addRelationship('parent'));
+            addChildBtn.addEventListener('click', () => addRelationship('child'));
+            addSpouseBtn.addEventListener('click', () => addRelationship('spouse'));
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target === editModalEl) {
+                    closeModal();
+                }
+            });
+            
+            // Prevent losing unsaved changes
+            window.addEventListener('beforeunload', (e) => {
+                if (hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                }
+            });
+        }
+        
+        // Show initial message when no persons exist
+        function showInitialMessage() {
+            initialMessageEl.style.display = 'block';
+            familyTreeEl.style.display = 'none';
+        }
+        
+        // Render the list of persons in the sidebar
+        function renderPersonList() {
+            personListEl.innerHTML = '';
+            
+            appState.tree.persons.forEach(person => {
+                const li = document.createElement('li');
+                li.className = `person-item ${person.gender}`;
+                li.textContent = `${person.firstName} ${person.lastName}`;
+                li.addEventListener('click', () => openEditModal(person.id));
+                personListEl.appendChild(li);
+            });
+        }
+        
+        // Render the family tree visualization
+        function renderFamilyTree() {
+            initialMessageEl.style.display = 'none';
+            familyTreeEl.style.display = 'flex';
+            
+            // Clear the tree container
+            familyTreeEl.innerHTML = '';
+            
+            if (appState.tree.persons.length === 0) {
+                return;
+            }
+            
+            // For simplicity, we'll create a basic layout
+            // In a real implementation, we would calculate positions based on relationships
+            const levels = calculateTreeLevels();
+            
+            levels.forEach((level, levelIndex) => {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'level';
+                
+                level.forEach(personId => {
+                    const person = appState.tree.persons.find(p => p.id === personId);
+                    if (person) {
+                        const node = createPersonNode(person);
+                        levelDiv.appendChild(node);
+                    }
+                });
+                
+                familyTreeEl.appendChild(levelDiv);
+            });
+        }
+        
+        // Calculate tree levels based on relationships
+        function calculateTreeLevels() {
+            // Simple implementation: group by generation
+            // In a real app, this would be more complex
+            const levels = [];
+            const processed = new Set();
+            
+            // Find root persons (those without parents)
+            const rootPersons = appState.tree.persons.filter(person => {
+                const hasParent = appState.tree.relations.some(rel => 
+                    rel.to === person.id && rel.type === 'parent'
+                );
+                return !hasParent;
+            });
+            
+            // Add root level
+            if (rootPersons.length > 0) {
+                levels.push(rootPersons.map(p => p.id));
+                rootPersons.forEach(p => processed.add(p.id));
+            }
+            
+            // Add next levels
+            let currentLevel = rootPersons;
+            while (currentLevel.length > 0) {
+                const nextLevel = [];
+                
+                currentLevel.forEach(parent => {
+                    const children = appState.tree.relations
+                        .filter(rel => rel.from === parent.id && rel.type === 'parent')
+                        .map(rel => rel.to);
+                    
+                    children.forEach(childId => {
+                        if (!processed.has(childId)) {
+                            nextLevel.push(childId);
+                            processed.add(childId);
+                        }
+                    });
+                });
+                
+                if (nextLevel.length > 0) {
+                    levels.push(nextLevel);
+                    currentLevel = appState.tree.persons.filter(p => nextLevel.includes(p.id));
+                } else {
+                    break;
+                }
+            }
+            
+            return levels;
+        }
+        
+        // Create a person node element
+        function createPersonNode(person) {
+            const node = document.createElement('div');
+            node.className = `person-node ${person.gender}`;
+            node.dataset.id = person.id;
+            
+            // Format dates
+            const birthYear = person.birthDate ? person.birthDate : '';
+            const deathYear = person.deathDate ? ` - ${person.deathDate}` : '';
+            const dates = birthYear || deathYear ? `(${birthYear}${deathYear})` : '';
+            
+            node.innerHTML = `
+                <div class="person-photo">
+                    ${person.photo ? `<img src="${person.photo}" alt="${person.firstName}">` : 
+                      `<span style="font-size: 24px;">👤</span>`}
+                </div>
+                <div class="person-name">${person.firstName} ${person.lastName}</div>
+                <div class="person-dates">${dates}</div>
+            `;
+            
+            node.addEventListener('dblclick', () => openEditModal(person.id));
+            
+            return node;
+        }
+        
+        // Open the edit modal
+        function openEditModal(personId = null) {
+            currentPersonId = personId;
+            
+            if (personId) {
+                // Editing existing person
+                const person = appState.tree.persons.find(p => p.id === personId);
+                if (person) {
+                    modalTitleEl.textContent = 'Edit Person';
+                    firstNameEl.value = person.firstName || '';
+                    lastNameEl.value = person.lastName || '';
+                    birthDateEl.value = person.birthDate || '';
+                    deathDateEl.value = person.deathDate || '';
+                    genderEl.value = person.gender || 'male';
+                    
+                    // Show photo if available
+                    if (person.photo) {
+                        // We can't set the file input value, but we can show the current photo
+                        // For now, we'll just clear the input
+                        personPhotoEl.value = '';
+                    } else {
+                        personPhotoEl.value = '';
+                    }
+                    
+                    // Show relations
+                    renderRelations(personId);
+                }
+            } else {
+                // Adding new person
+                modalTitleEl.textContent = 'Add Person';
+                firstNameEl.value = '';
+                lastNameEl.value = '';
+                birthDateEl.value = '';
+                deathDateEl.value = '';
+                genderEl.value = 'male';
+                personPhotoEl.value = '';
+                relationsListEl.innerHTML = '';
+            }
+            
+            editModalEl.style.display = 'flex';
+        }
+        
+        // Render relations for the current person
+        function renderRelations(personId) {
+            relationsListEl.innerHTML = '<h4>Relationships:</h4>';
+            
+            const relations = appState.tree.relations.filter(rel => 
+                rel.from === personId || rel.to === personId
+            );
+            
+            if (relations.length === 0) {
+                relationsListEl.innerHTML += '<p>No relationships yet</p>';
+                return;
+            }
+            
+            relations.forEach(rel => {
+                const relatedPersonId = rel.from === personId ? rel.to : rel.from;
+                const relatedPerson = appState.tree.persons.find(p => p.id === relatedPersonId);
+                
+                if (relatedPerson) {
+                    const relationType = rel.type;
+                    const direction = rel.from === personId ? 'to' : 'from';
+                    const relationText = `${relationType} ${direction === 'to' ? 'of' : 'with'} ${relatedPerson.firstName} ${relatedPerson.lastName}`;
+                    
+                    const relationDiv = document.createElement('div');
+                    relationDiv.className = 'relation-item';
+                    relationDiv.textContent = relationText;
+                    
+                    // Add remove button
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.style.marginLeft = '10px';
+                    removeBtn.style.backgroundColor = '#dc3545';
+                    removeBtn.style.color = 'white';
+                    removeBtn.style.border = 'none';
+                    removeBtn.style.borderRadius = '3px';
+                    removeBtn.style.padding = '2px 6px';
+                    removeBtn.style.cursor = 'pointer';
+                    removeBtn.addEventListener('click', () => removeRelationship(rel));
+                    
+                    relationDiv.appendChild(removeBtn);
+                    relationsListEl.appendChild(relationDiv);
+                }
+            });
+        }
+        
+        // Remove a relationship
+        function removeRelationship(rel) {
+            appState.tree.relations = appState.tree.relations.filter(
+                r => !(r.from === rel.from && r.to === rel.to && r.type === rel.type)
+            );
+            
+            // If we're editing a person, refresh the relations list
+            if (currentPersonId) {
+                renderRelations(currentPersonId);
+            }
+            
+            hasUnsavedChanges = true;
+        }
+        
+        // Add a relationship
+        function addRelationship(type) {
+            if (!currentPersonId) return;
+            
+            // Get the current person
+            const currentPerson = appState.tree.persons.find(p => p.id === currentPersonId);
+            if (!currentPerson) return;
+            
+            // Create a list of other persons to choose from
+            const otherPersons = appState.tree.persons.filter(p => p.id !== currentPersonId);
+            
+            // Create a prompt to select or create a person
+            const options = otherPersons.map(p => 
+                `<option value="${p.id}">${p.firstName} ${p.lastName}</option>`
+            ).join('');
+            
+            const choice = prompt(
+                `Add ${type}:\n\n1. Select existing person:\n${options ? options : 'No other persons available'}\n\n2. Or type "new" to create a new person`
+            );
+            
+            if (choice === 'new') {
+                // Create a new person
+                const newPerson = {
+                    id: generateId(),
+                    firstName: '',
+                    lastName: '',
+                    birthDate: '',
+                    deathDate: '',
+                    gender: 'male',
+                    photo: null
+                };
+                
+                appState.tree.persons.push(newPerson);
+                addRelationshipToState(currentPersonId, newPerson.id, type);
+                
+                // Open the new person for editing
+                openEditModal(newPerson.id);
+            } else if (choice && otherPersons.some(p => p.id === choice)) {
+                // Add relationship to existing person
+                addRelationshipToState(currentPersonId, choice, type);
+                
+                // Refresh relations list
+                renderRelations(currentPersonId);
+            }
+            
+            hasUnsavedChanges = true;
+        }
+        
+        // Add relationship to state
+        function addRelationshipToState(fromId, toId, type) {
+            // Add the relationship
+            appState.tree.relations.push({
+                from: fromId,
+                to: toId,
+                type: type
+            });
+            
+            // Add reverse relationship if needed
+            if (type === 'spouse') {
+                appState.tree.relations.push({
+                    from: toId,
+                    to: fromId,
+                    type: type
+                });
+            } else if (type === 'parent') {
+                // If A is parent of B, then B is child of A
+                appState.tree.relations.push({
+                    from: toId,
+                    to: fromId,
+                    type: 'child'
+                });
+            } else if (type === 'child') {
+                // If A is child of B, then B is parent of A
+                appState.tree.relations.push({
+                    from: toId,
+                    to: fromId,
+                    type: 'parent'
+                });
+            }
+        }
+        
+        // Save person data
+        async function savePerson() {
+            const firstName = firstNameEl.value.trim();
+            const lastName = lastNameEl.value.trim();
+            
+            if (!firstName || !lastName) {
+                alert('Please enter both first name and last name');
+                return;
+            }
+            
+            // Get photo if uploaded
+            let photo = null;
+            if (personPhotoEl.files && personPhotoEl.files[0]) {
+                photo = await getBase64(personPhotoEl.files[0]);
+            }
+            
+            if (currentPersonId) {
+                // Update existing person
+                const personIndex = appState.tree.persons.findIndex(p => p.id === currentPersonId);
+                if (personIndex !== -1) {
+                    appState.tree.persons[personIndex] = {
+                        ...appState.tree.persons[personIndex],
+                        firstName,
+                        lastName,
+                        birthDate: birthDateEl.value.trim(),
+                        deathDate: deathDateEl.value.trim(),
+                        gender: genderEl.value,
+                        photo: photo || appState.tree.persons[personIndex].photo
+                    };
+                }
+            } else {
+                // Add new person
+                const newPerson = {
+                    id: generateId(),
+                    firstName,
+                    lastName,
+                    birthDate: birthDateEl.value.trim(),
+                    deathDate: deathDateEl.value.trim(),
+                    gender: genderEl.value,
+                    photo
+                };
+                
+                appState.tree.persons.push(newPerson);
+                currentPersonId = newPerson.id;
+            }
+            
+            closeModal();
+            renderPersonList();
+            renderFamilyTree();
+            hasUnsavedChanges = true;
+        }
+        
+        // Delete person
+        function deletePerson() {
+            if (!currentPersonId) return;
+            
+            if (!confirm('Are you sure you want to delete this person and their relationships?')) {
+                return;
+            }
+            
+            // Remove person
+            appState.tree.persons = appState.tree.persons.filter(p => p.id !== currentPersonId);
+            
+            // Remove relationships involving this person
+            appState.tree.relations = appState.tree.relations.filter(
+                rel => rel.from !== currentPersonId && rel.to !== currentPersonId
+            );
+            
+            closeModal();
+            renderPersonList();
+            renderFamilyTree();
+            hasUnsavedChanges = true;
+        }
+        
+        // Close modal
+        function closeModal() {
+            editModalEl.style.display = 'none';
+        }
+        
+        // Import data from JSON file
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        // Validate the structure
+                        if (!importedData.app || !importedData.app.tree || 
+                            !Array.isArray(importedData.app.tree.persons) || 
+                            !Array.isArray(importedData.app.tree.relations)) {
+                            alert('Invalid file format');
+                            return;
+                        }
+                        
+                        // Load the data
+                        appState.tree.persons = importedData.app.tree.persons;
+                        appState.tree.relations = importedData.app.tree.relations;
+                        
+                        // Update UI
+                        renderPersonList();
+                        renderFamilyTree();
+                        hasUnsavedChanges = false;
+                        
+                        alert('Data imported successfully!');
+                    } catch (error) {
+                        alert('Error importing data: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // Export data to JSON file
+        function exportData() {
+            const dataStr = JSON.stringify(appState, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'family_tree.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            hasUnsavedChanges = false;
+        }
+        
+        // Helper function to generate unique IDs
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+        
+        // Helper function to convert file to base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+        // Initialize the app
+        initApp();
+    </script>
+</body>
+</html>
