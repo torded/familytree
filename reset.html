@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Family Tree</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 600px; 
+            margin: 0 auto;
+        }
+        .reset-button {
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .reset-button:hover {
+            background-color: #c0392b;
+        }
+        .continue-button {
+            background-color: #2ecc71;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .continue-button:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <h1>Reset Family Tree Data</h1>
+    <p>This will clear any saved family tree data from your browser and allow you to start fresh.</p>
+    
+    <button class="reset-button" onclick="resetData()">Reset All Data</button>
+    <button class="continue-button" onclick="window.location.href='/index.html'">Continue Anyway</button>
+    
+    <script>
+        function resetData() {
+            if (confirm('Are you sure you want to reset all family tree data? This cannot be undone.')) {
+                localStorage.removeItem('familyTreeData');
+                alert('Data has been reset. You can now start fresh.');
+                window.location.href = '/index.html';
+            }
+        }
+    </script>
+</body>
+</html>
