@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Creator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h1 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .person-list {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .person-list-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .person-list-item:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .person-list-item.male {
+            border-left: 3px solid #3498db;
+        }
+
+        .person-list-item.female {
+            border-left: 3px solid #e91e63;
+        }
+
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            position: relative;
+        }
+
+        .canvas {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background: #fafafa;
+        }
+
+        .tree-container {
+            min-height: 100%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state button {
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        .tree-node {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+
+        .node-content {
+            width: 180px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .node-content:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .node-content.male {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #2196f3;
+        }
+
+        .node-content.female {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+            border: 2px solid #e91e63;
+        }
+
+        .node-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            overflow: hidden;
+        }
+
+        .node-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .node-name {
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .node-dates {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .node-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+        }
+
+        .node-content:hover .node-actions {
+            display: block;
+        }
+
+        .edit-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .edit-btn:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .children-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .children-container::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: #bdc3c7;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #95a5a6;
+        }
+
+        .modal-close:hover {
+            color: #7f8c8d;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .photo-upload {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .photo-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #ecf0f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            overflow: hidden;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .modal-footer-left {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-footer-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .relationship-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .relationship-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .relationship-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .relation-select-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+        }
+
+        .relation-select-modal .modal {
+            width: 400px;
+        }
+
+        .relation-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .relation-option {
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .relation-option:hover {
+            background: #bdc3c7;
+        }
+
+        .relation-option h4 {
+            margin-bottom: 5px;
+        }
+
+        .relation-option p {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .spouse-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .spouse-connector {
+            width: 30px;
+            height: 2px;
+            background: #e74c3c;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            padding: 8px 15px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .file-upload-btn:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Family Tree Creator</h1>
+            <div class="sidebar-buttons">
+                <button class="btn btn-primary" onclick="importData()">Import Data</button>
+                <button class="btn btn-success" onclick="exportData()">Export Data</button>
+            </div>
+            <div class="person-list" id="personList"></div>
+        </aside>
+
+        <main class="main-area">
+            <div class="canvas" id="canvas">
+                <div class="tree-container" id="treeContainer">
+                    <div class="empty-state" id="emptyState">
+                        <h2>Start Your Family Tree</h2>
+                        <button class="btn btn-primary" onclick="openModal()">Add First Person</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay hidden" id="modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Person</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Photo</label>
+                    <div class="photo-upload">
+                        <div class="photo-preview" id="photoPreview">
+                            <span>👤</span>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+                        <button class="file-upload-btn" onclick="document.getElementById('photoInput').click()">Upload Photo</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>First Name *</label>
+                    <input type="text" id="firstName" placeholder="Enter first name">
+                </div>
+                <div class="form-group">
+                    <label>Last Name *</label>
+                    <input type="text" id="lastName" placeholder="Enter last name">
+                </div>
+                <div class="form-group">
+                    <label>Birth Year</label>
+                    <input type="number" id="birthYear" placeholder="YYYY" min="1000" max="2100">
+                </div>
+                <div class="form-group">
+                    <label>Death Year</label>
+                    <input type="number" id="deathYear" placeholder="YYYY" min="1000" max="2100">
+                </div>
+                <div class="form-group">
+                    <label>Gender *</label>
+                    <select id="gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div class="relationship-section" id="relationshipSection">
+                    <h3>Relationships</h3>
+                    <div class="relationship-buttons">
+                        <button class="btn btn-secondary" onclick="addParent()">Add Parent</button>
+                        <button class="btn btn-secondary" onclick="addChild()">Add Child</button>
+                        <button class="btn btn-secondary" onclick="addSpouse()">Add Spouse</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-left">
+                    <button class="btn btn-danger" id="deleteBtn" onclick="deletePerson()" style="display: none;">Delete Person</button>
+                </div>
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="savePerson()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="relation-select-modal hidden" id="relationSelectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="relationTitle">Add Parent</h2>
+                <button class="modal-close" onclick="closeRelationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="relation-options">
+                    <div class="relation-option" onclick="selectExistingPerson()">
+                        <h4>Select Existing Person</h4>
+                        <p>Choose from already created family members</p>
+                    </div>
+                    <div class="relation-option" onclick="createNewPerson()">
+                        <h4>Create New Person</h4>
+                        <p>Add a new family member to the tree</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="selectPersonModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Select Person</h2>
+                <button class="modal-close" onclick="closeSelectPersonModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <select id="personSelect"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSelectPersonModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmPersonSelection()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="importInput" accept=".json" style="display: none;" onchange="handleImport(event)">
+
+    <script>
+        const appState = {
+            app: {
+                settings: {},
+                tree: {
+                    persons: [],
+                    relations: []
+                }
+            }
+        };
+
+        let currentPersonId = null;
+        let currentRelationType = null;
+        let hasUnsavedChanges = false;
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function setUnsavedChanges(value) {
+            hasUnsavedChanges = value;
+        }
+
+        window.onbeforeunload = function(e) {
+            if (hasUnsavedChanges && appState.tree.persons.length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
+
+        function openModal(personId = null) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modalTitle');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const relationshipSection = document.getElementById('relationshipSection');
+
+            if (personId) {
+                const person = appState.tree.persons.find(p => p.id === personId);
+                if (person) {
+                    currentPersonId = personId;
+                    title.textContent = 'Edit Person';
+                    deleteBtn.style.display = 'block';
+                    relationshipSection.style.display = 'block';
+
+                    document.getElementById('firstName').value = person.firstName || '';
+                    document.getElementById('lastName').value = person.lastName || '';
+                    document.getElementById('birthYear').value = person.birthDate || '';
+                    document.getElementById('deathYear').value = person.deathDate || '';
+                    document.getElementById('gender').value = person.gender || 'male';
+
+                    const photoPreview = document.getElementById('photoPreview');
+                    if (person.photo) {
+                        photoPreview.innerHTML = `<img src="${person.photo}" alt="Photo">`;
+                    } else {
+                        photoPreview.innerHTML = '<span>👤</span>';
+                    }
+                }
+            } else {
+                currentPersonId = null;
+                title.textContent = 'Add Person';
+                deleteBtn.style.display = 'none';
+                relationshipSection.style.display = 'none';
+
+                document.getElementById('firstName').value = '';
+                document.getElementById('lastName').value = '';
+                document.getElementById('birthYear').value = '';
+                document.getElementById('deathYear').value = '';
+                document.getElementById('gender').value = 'male';
+                document.getElementById('photoPreview').innerHTML = '<span>👤</span>';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            currentPersonId = null;
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const photoPreview = document.getElementById('photoPreview');
+                    photoPreview.innerHTML = `<img src="${e.target.result}" alt="Photo">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function savePerson() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const birthYear = document.getElementById('birthYear').value;
+            const deathYear = document.getElementById('deathYear').value;
+            const gender = document.getElementById('gender').value;
+            const photoPreview = document.getElementById('photoPreview');
+            const photoImg = photoPreview.querySelector('img');
+
+            if (!firstName || !lastName) {
+                alert('Please enter first and last name');
+                return;
+            }
+
+            const personData = {
+                id: currentPersonId || generateUUID(),
+                firstName,
+                lastName,
+                birthDate: birthYear,
+                deathDate: deathYear,
+                gender,
+                photo: photoImg ? photoImg.src : null
+            };
+
+            if (currentPersonId) {
+                const index = appState.tree.persons.findIndex(p => p.id === currentPersonId);
+                if (index !== -1) {
+                    appState.tree.persons[index] = personData;
+                }
+            } else {
+                appState.tree.persons.push(personData);
+            }
+
+            setUnsavedChanges(true);
+            closeModal();
+            render();
+        }
+
+        function deletePerson() {
+            if (!currentPersonId) return;
+
+            if (!confirm('Are you sure you want to delete this person? All relationships will also be removed.')) {
+                return;
+            }
+
+            appState.tree.persons = appState.tree.persons.filter(p => p.id !== currentPersonId);
+            appState.tree.relations = appState.tree.relations.filter(
+                r => r.from !== currentPersonId && r.to !== currentPersonId
+            );
+
+            setUnsavedChanges(true);
+            closeModal();
+            render();
+        }
+
+        function openRelationModal(type) {
+            currentRelationType = type;
+            const titles = {
+                'parent': 'Add Parent',
+                'child': 'Add Child',
+                'spouse': 'Add Spouse'
+            };
+            document.getElementById('relationTitle').textContent = titles[type];
+            document.getElementById('relationSelectModal').classList.remove('hidden');
+        }
+
+        function closeRelationModal() {
+            document.getElementById('relationSelectModal').classList.add('hidden');
+            currentRelationType = null;
+        }
+
+        function selectExistingPerson() {
+            closeRelationModal();
+            const select = document.getElementById('personSelect');
+            select.innerHTML = '<option value="">Select a person...</option>';
+
+            const availablePersons = appState.tree.persons.filter(p => p.id !== currentPersonId);
+            availablePersons.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = `${person.firstName} ${person.lastName}`;
+                select.appendChild(option);
+            });
+
+            document.getElementById('selectPersonModal').classList.remove('hidden');
+        }
+
+        function createNewPerson() {
+            closeRelationModal();
+            closeModal();
+            openModal();
+        }
+
+        function closeSelectPersonModal() {
+            document.getElementById('selectPersonModal').classList.add('hidden');
+        }
+
+        function confirmPersonSelection() {
+            const select = document.getElementById('personSelect');
+            const selectedId = select.value;
+
+            if (!selectedId) {
+                alert('Please select a person');
+                return;
+            }
+
+            const relation = {
+                from: currentPersonId,
+                to: selectedId,
+                type: currentRelationType
+            };
+
+            appState.tree.relations.push(relation);
+            setUnsavedChanges(true);
+            closeSelectPersonModal();
+            closeModal();
+            render();
+        }
+
+        function addParent() {
+            openRelationModal('parent');
+        }
+
+        function addChild() {
+            openRelationModal('child');
+        }
+
+        function addSpouse() {
+            openRelationModal('spouse');
+        }
+
+        function getParents(personId) {
+            return appState.tree.relations
+                .filter(r => r.to === personId && r.type === 'parent')
+                .map(r => appState.tree.persons.find(p => p.id === r.from))
+                .filter(Boolean);
+        }
+
+        function getChildren(personId) {
+            return appState.tree.relations
+                .filter(r => r.from === personId && r.type === 'child')
+                .map(r => appState.tree.persons.find(p => p.id === r.to))
+                .filter(Boolean);
+        }
+
+        function getSpouse(personId) {
+            return appState.tree.relations
+                .filter(r => r.from === personId && r.type === 'spouse')
+                .map(r => appState.tree.persons.find(p => p.id === r.to))
+                .filter(Boolean);
+        }
+
+        function getRootPersons() {
+            const personIds = appState.tree.persons.map(p => p.id);
+            const childIds = appState.tree.relations
+                .filter(r => r.type === 'child')
+                .map(r => r.to);
+
+            return personIds
+                .filter(id => !childIds.includes(id))
+                .map(id => appState.tree.persons.find(p => p.id === id))
+                .filter(Boolean);
+        }
+
+        function renderPersonNode(person) {
+            const birthYear = person.birthDate || '?';
+            const deathYear = person.deathDate || '?';
+            const dates = person.deathDate ? `${birthYear} - ${deathYear}` : `b. ${birthYear}`;
+
+            return `
+                <div class="tree-node">
+                    <div class="node-content ${person.gender}" ondblclick="openModal('${person.id}')">
+                        <div class="node-actions">
+                            <button class="edit-btn" onclick="event.stopPropagation(); openModal('${person.id}')">✏️</button>
+                        </div>
+                        <div class="node-photo">
+                            ${person.photo ? `<img src="${person.photo}" alt="${person.firstName}">` : '👤'}
+                        </div>
+                        <div class="node-name">${person.firstName} ${person.lastName}</div>
+                        <div class="node-dates">${dates}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTree(person, visited = new Set()) {
+            if (visited.has(person.id)) {
+                return '';
+            }
+            visited.add(person.id);
+
+            let html = '<div class="tree-node">';
+            html += `
+                <div class="node-content ${person.gender}" ondblclick="openModal('${person.id}')">
+                    <div class="node-actions">
+                        <button class="edit-btn" onclick="event.stopPropagation(); openModal('${person.id}')">✏️</button>
+                    </div>
+                    <div class="node-photo">
+                        ${person.photo ? `<img src="${person.photo}" alt="${person.firstName}">` : '👤'}
+                    </div>
+                    <div class="node-name">${person.firstName} ${person.lastName}</div>
+                    <div class="node-dates">${person.deathDate ? `${person.birthDate || '?'} - ${person.deathDate}` : `b. ${person.birthDate || '?'}`}</div>
+                </div>
+            `;
+
+            const spouses = getSpouse(person.id);
+            if (spouses.length > 0) {
+                html += '<div class="spouse-container">';
+                spouses.forEach(spouse => {
+                    if (!visited.has(spouse.id)) {
+                        visited.add(spouse.id);
+                        html += `<div class="spouse-connector"></div>`;
+                        html += renderPersonNode(spouse);
+                    }
+                });
+                html += '</div>';
+            }
+
+            const children = getChildren(person.id);
+            if (children.length > 0) {
+                html += '<div class="children-container">';
+                children.forEach(child => {
+                    html += renderTree(child, visited);
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function render() {
+            const treeContainer = document.getElementById('treeContainer');
+            const emptyState = document.getElementById('emptyState');
+            const personList = document.getElementById('personList');
+
+            if (appState.tree.persons.length === 0) {
+                treeContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h2>Start Your Family Tree</h2>
+                        <button class="btn btn-primary" onclick="openModal()">Add First Person</button>
+                    </div>
+                `;
+                personList.innerHTML = '';
+                return;
+            }
+
+            const rootPersons = getRootPersons();
+            let treeHtml = '';
+
+            const visited = new Set();
+            rootPersons.forEach(person => {
+                treeHtml += renderTree(person, visited);
+            });
+
+            treeContainer.innerHTML = treeHtml;
+
+            personList.innerHTML = '';
+            appState.tree.persons.forEach(person => {
+                const item = document.createElement('div');
+                item.className = `person-list-item ${person.gender}`;
+                item.textContent = `${person.firstName} ${person.lastName}`;
+                item.onclick = () => openModal(person.id);
+                personList.appendChild(item);
+            });
+        }
+
+        function exportData() {
+            if (appState.tree.persons.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            const dataStr = JSON.stringify(appState, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'family_tree.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            setUnsavedChanges(false);
+        }
+
+        function importData() {
+            document.getElementById('importInput').click();
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (!data.tree || !data.tree.persons || !Array.isArray(data.tree.persons)) {
+                        throw new Error('Invalid data format');
+                    }
+
+                    appState.tree.persons = data.tree.persons || [];
+                    appState.tree.relations = data.tree.relations || [];
+
+                    setUnsavedChanges(false);
+                    render();
+                    alert('Data imported successfully');
+                } catch (error) {
+                    alert('Error importing file: Invalid JSON format');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        render();
+    </script>
+</body>
+</html>
